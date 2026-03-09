@@ -14,6 +14,8 @@ public class ReportProxy implements Report {
     private final String classification;
     private final AccessControl accessControl = new AccessControl();
 
+    private RealReport cachedReport;
+
     public ReportProxy(String reportId, String title, String classification) {
         this.reportId = reportId;
         this.title = title;
@@ -22,9 +24,15 @@ public class ReportProxy implements Report {
 
     @Override
     public void display(User user) {
-        // Starter placeholder: intentionally incorrect.
-        // Students should remove direct real loading on every call.
-        RealReport report = new RealReport(reportId, title, classification);
-        report.display(user);
+        if (!accessControl.canAccess(user, classification)) {
+            System.out.println("ACCESS DENIED: " + user.getName() + " cannot access " + classification + " report " + reportId);
+            return;
+        }
+
+        if (cachedReport == null) {
+            cachedReport = new RealReport(reportId, title, classification);
+        }
+        
+        cachedReport.display(user);
     }
 }
