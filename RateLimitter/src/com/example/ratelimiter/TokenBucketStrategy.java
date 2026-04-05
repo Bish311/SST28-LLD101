@@ -9,10 +9,8 @@ public class TokenBucketStrategy implements RateLimitStrategy {
 
     @Override
     public boolean isAllowed(String key, RateLimiterRule rule) {
-        TokenBucketState state = storage.getClientState(key);
-        if (state == null) {
-            state = new TokenBucketState(rule.maxTokens());
-        }
+        TokenBucketState state = storage.getOrCreateClientState(key,
+                new TokenBucketState(rule.maxTokens()));
 
         long now = System.currentTimeMillis();
         long lastRefill = state.getLastRefillTimestamp().get();
@@ -26,13 +24,14 @@ public class TokenBucketStrategy implements RateLimitStrategy {
             state.getCurrentTokens().set(newTokens);
         }
 
-        boolean allowed = false;
-        if (state.getCurrentTokens().get() > 0) {
-            state.getCurrentTokens().decrementAndGet();
-            allowed = true;
+        while (true) {
+            int current = state.getCurrentTokens().get();
+            if (current <= 0) {
+                return false;
+            }
+            if (state.getCurrentTokens().compareAndSet(current, current - 1)) {
+                return true;
+            }
         }
-
-        storage.saveClientState(key, state);
-        return allowed;
     }
 }

@@ -19,4 +19,14 @@ public class InMemoryStorage implements RateLimitStorage {
     public <T> void saveClientState(String key, T state) {
         stateMap.put(key, state);
     }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T getOrCreateClientState(String key, T defaultState) {
+        Object existing = stateMap.putIfAbsent(key, defaultState);
+        if (existing != null) {
+            return (T) existing;
+        }
+        return defaultState;
+    }
 }

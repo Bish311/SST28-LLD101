@@ -5,10 +5,13 @@ import java.util.Optional;
 public class RateLimiterService {
     private final RuleProvider ruleProvider;
     private final RateLimitStrategy strategy;
+    private final KeyResolver keyResolver;
 
-    public RateLimiterService(RuleProvider ruleProvider, RateLimitStrategy strategy) {
+    public RateLimiterService(RuleProvider ruleProvider, RateLimitStrategy strategy,
+                              KeyResolver keyResolver) {
         this.ruleProvider = ruleProvider;
         this.strategy = strategy;
+        this.keyResolver = keyResolver;
     }
 
     public RateLimitResponse checkAccess(RateLimitRequest request) {
@@ -18,7 +21,7 @@ public class RateLimiterService {
         }
 
         RateLimiterRule rule = ruleOpt.get();
-        String key = request.clientId() + ":" + request.endpoint();
+        String key = keyResolver.resolve(request);
 
         boolean allowed = strategy.isAllowed(key, rule);
         if (allowed) {

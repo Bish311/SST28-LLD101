@@ -11,10 +11,8 @@ public class SlidingWindowStrategy implements RateLimitStrategy {
 
     @Override
     public boolean isAllowed(String key, RateLimiterRule rule) {
-        SlidingWindowState state = storage.getClientState(key);
-        if (state == null) {
-            state = new SlidingWindowState();
-        }
+        SlidingWindowState state = storage.getOrCreateClientState(key,
+                new SlidingWindowState());
 
         long now = System.currentTimeMillis();
         long windowStart = now - rule.windowSizeMs();
@@ -29,13 +27,11 @@ public class SlidingWindowStrategy implements RateLimitStrategy {
             }
         }
 
-        boolean allowed = false;
         if (timestamps.size() < rule.maxTokens()) {
             timestamps.offer(now);
-            allowed = true;
+            return true;
         }
 
-        storage.saveClientState(key, state);
-        return allowed;
+        return false;
     }
 }
